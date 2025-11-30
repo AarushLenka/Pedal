@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ResQCall"
+rootProject.name = "Pedal"
 include ':app'

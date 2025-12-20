@@ -24,27 +24,40 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.resqcall.ui.theme.ResQCallTheme
 import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
 
-    private lateinit var btnStop: Button
-    private lateinit var txtTimer: TextView
-    private lateinit var btnSelectContact: Button
-    private lateinit var btnSelectDevice: Button
-    private lateinit var waveView: View
-    private var mediaPlayer: MediaPlayer? = null
     private var emergencyContact: String? = null
     private var countdownTimer: CountDownTimer? = null
-    private var animator: ValueAnimator? = null
 
     // Bluetooth related variables
     private val TAG = "ResQCallBluetooth"
@@ -66,7 +79,7 @@ class MainActivity : AppCompatActivity() {
                 cursor?.use {
                     if (it.moveToFirst()) {
                         emergencyContact = it.getString(0)
-                        txtTimer.text = "Emergency Contact: $emergencyContact"
+                        // Update UI
                     }
                 }
             }
@@ -84,20 +97,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        btnStop = findViewById(R.id.btnStop)
-        txtTimer = findViewById(R.id.txtTimer)
-        waveView = findViewById(R.id.waveView)
-        btnSelectContact = findViewById(R.id.btnSelectContact)
-
-        btnSelectDevice = findViewById(R.id.btnSelectDevice)
-
-        btnStop.setOnClickListener { stopSOS() }
-        btnSelectContact.setOnClickListener { selectContact() }
-        btnSelectDevice.setOnClickListener { selectBluetoothDevice() }
+        enableEdgeToEdge()
+        setContent {
+            ResQCallTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    ResQCallApp(
+                        onSelectContact = { selectContact() },
+                        onSelectDevice = { selectBluetoothDevice() },
+                        onStopSOS = { stopSOS() }
+                    )
+                }
+            }
+        }
 
         requestPermissions()
         initBluetooth()
@@ -251,7 +266,7 @@ class MainActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         Toast.makeText(this, "Connected to ${device.name}", Toast.LENGTH_SHORT).show()
-                        txtTimer.text = "Connected to ${device.name}"
+                        // Update UI
                     }
 
                     // Start listening for data
@@ -321,7 +336,7 @@ class MainActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         Toast.makeText(this, "Connection lost with the device", Toast.LENGTH_SHORT).show()
-                        txtTimer.text = "Waiting for fall detection..."
+                        // Update UI
                     }
 
                     break
@@ -334,48 +349,35 @@ class MainActivity : AppCompatActivity() {
 
     private fun startSOS() {
         if (emergencyContact.isNullOrEmpty()) {
-            txtTimer.text = "Select an emergency contact first!"
+            // Update UI to show error
             return
         }
 
-        waveView.visibility = View.VISIBLE
-        animateWave()
+        // Start animation, sound, etc.
         increaseVolume()
         playAlarmSound()
 
-        // Hide the device and contact selection buttons during emergency
-        btnSelectDevice.visibility = View.GONE
-        btnSelectContact.visibility = View.GONE
 
         countdownTimer = object : CountDownTimer(30000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                txtTimer.text = "Time left: ${millisUntilFinished / 1000}s"
+                // Update UI with timer
             }
 
             override fun onFinish() {
-                txtTimer.text = "Calling Help!"
+                // Update UI
                 stopAlarmOnly()
 
                 sendLocationSharingMessage(emergencyContact!!)
 
                 // Small delay before making the call
-                txtTimer.postDelayed({
-                    callEmergencyContact()
-                }, 1500)
+                // postDelayed
+                callEmergencyContact()
             }
         }.start()
-
-        // Only show the STOP button
-        btnStop.visibility = View.VISIBLE
     }
 
     private fun stopAlarmOnly() {
         // Stop just the alarm and animation but keep the emergency process going
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
-
-        animator?.cancel()
     }
 
     private fun stopSOS() {
@@ -383,37 +385,11 @@ class MainActivity : AppCompatActivity() {
         countdownTimer = null
 
         stopAlarmOnly()
-
-        waveView.visibility = View.GONE
-
-        // Restore device and contact selection buttons
-        btnSelectDevice.visibility = View.VISIBLE
-        btnSelectContact.visibility = View.VISIBLE
-
-        if (connectedDevice != null) {
-            txtTimer.text = "Connected to ${connectedDevice?.name}"
-        } else {
-            txtTimer.text = "Waiting for fall detection..."
-        }
-
-        btnStop.visibility = View.GONE
-    }
-
-    private fun animateWave() {
-        animator = ValueAnimator.ofInt(100, 1000).apply {
-            duration = 30000
-            addUpdateListener {
-                val value = it.animatedValue as Int
-                waveView.layoutParams.width = value
-                waveView.layoutParams.height = value
-                waveView.requestLayout()
-            }
-            start()
-        }
+        // Update UI
     }
 
     private fun playAlarmSound() {
-        mediaPlayer = MediaPlayer.create(this, R.raw.alarm).apply {
+        val mediaPlayer = MediaPlayer.create(this, R.raw.alarm).apply {
             isLooping = true
             start()
         }
@@ -583,15 +559,49 @@ class MainActivity : AppCompatActivity() {
         disconnectFromDevice()
 
         // Clean up media player
-        mediaPlayer?.release()
-        mediaPlayer = null
-
-        // Cancel any running timer
         countdownTimer?.cancel()
-        animator?.cancel()
     }
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 100
+    }
+}
+
+@Composable
+fun ResQCallApp(onSelectContact: () -> Unit, onSelectDevice: () -> Unit, onStopSOS: () -> Unit) {
+    var sosState by remember { mutableStateOf(false) }
+    var timeLeft by remember { mutableStateOf(30) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (sosState) {
+            Text(text = "Time left: ${timeLeft}s")
+            Button(onClick = {
+                sosState = false
+                onStopSOS()
+            }) {
+                Text("Stop SOS")
+            }
+        } else {
+            Button(onClick = onSelectContact) {
+                Text("Select Emergency Contact")
+            }
+            Button(onClick = onSelectDevice) {
+                Text("Select Fall Detection Device")
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DefaultPreview() {
+    ResQCallTheme {
+        ResQCallApp({}, {}, {})
     }
 }

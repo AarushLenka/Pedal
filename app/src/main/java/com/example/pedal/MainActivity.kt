@@ -1,4 +1,4 @@
-package com.example.resqcall
+package com.example.pedal
 
 import android.Manifest
 import android.animation.ValueAnimator
@@ -49,7 +49,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.resqcall.ui.theme.ResQCallTheme
+import com.example.pedal.ui.theme.PedalTheme
 import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
     private var countdownTimer: CountDownTimer? = null
 
     // Bluetooth related variables
-    private val TAG = "ResQCallBluetooth"
+    private val TAG = "PedalBluetooth"
     private val SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB") // Standard SPP UUID
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothSocket: BluetoothSocket? = null
@@ -100,12 +100,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ResQCallTheme {
+            PedalTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ResQCallApp(
+                    PedalApp(
                         onSelectContact = { selectContact() },
                         onSelectDevice = { selectBluetoothDevice() },
                         onStopSOS = { stopSOS() }
@@ -155,22 +155,7 @@ class MainActivity : ComponentActivity() {
 
         // Request permissions if needed
         if (permissionsToRequest.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), PERMISSION_REQUEST_CODE)
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            // Check if all permissions were granted
-            val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-
-            if (allGranted) {
-                Toast.makeText(this, "All permissions granted", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Some permissions were denied. Location sharing may not work properly.", Toast.LENGTH_SHORT).show()
-            }
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 100)
         }
     }
 
@@ -561,14 +546,10 @@ class MainActivity : ComponentActivity() {
         // Clean up media player
         countdownTimer?.cancel()
     }
-
-    companion object {
-        private const val PERMISSION_REQUEST_CODE = 100
-    }
 }
 
 @Composable
-fun ResQCallApp(onSelectContact: () -> Unit, onSelectDevice: () -> Unit, onStopSOS: () -> Unit) {
+fun PedalApp(onSelectContact: () -> Unit, onSelectDevice: () -> Unit, onStopSOS: () -> Unit) {
     var sosState by remember { mutableStateOf(false) }
     var timeLeft by remember { mutableStateOf(30) }
 
@@ -601,7 +582,7 @@ fun ResQCallApp(onSelectContact: () -> Unit, onSelectDevice: () -> Unit, onStopS
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    ResQCallTheme {
-        ResQCallApp({}, {}, {})
+    PedalTheme {
+        PedalApp({}, {}, {})
     }
 }

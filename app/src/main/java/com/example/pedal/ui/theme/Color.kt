@@ -1,4 +1,4 @@
-package com.example.resqcall.ui.theme
+package com.example.pedal.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

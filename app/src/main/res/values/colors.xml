@@ -7,7 +7,22 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="colorPrimary">#6200EE</color>
-    <color name="colorPrimaryDark">#3700B3</color>
-    <color name="colorAccent">#03DAC5</color>
+    
+    <color name="gruvbox_bg">#282828</color>
+    <color name="gruvbox_fg">#ebdbb2</color>
+    <color name="gruvbox_red_dark">#cc241d</color>
+    <color name="gruvbox_red_light">#fb4934</color>
+    <color name="gruvbox_green_dark">#98971a</color>
+    <color name="gruvbox_green_light">#b8bb26</color>
+    <color name="gruvbox_yellow_dark">#d79921</color>
+    <color name="gruvbox_yellow_light">#fabd2f</color>
+    <color name="gruvbox_blue_dark">#458588</color>
+    <color name="gruvbox_blue_light">#83a598</color>
+    <color name="gruvbox_purple_dark">#b16286</color>
+    <color name="gruvbox_purple_light">#d3869b</color>
+    <color name="gruvbox_aqua_dark">#689d6a</color>
+    <color name="gruvbox_aqua_light">#8ec07c</color>
+    <color name="gruvbox_gray">#a89984</color>
+    <color name="gruvbox_orange_dark">#d65d0e</color>
+    <color name="gruvbox_orange_light">#fe8019</color>
 </resources>

@@ -50,9 +50,20 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.pedal.ui.theme.PedalTheme
+import com.google.gson.Gson
 import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
+
+data class PedalData(
+    val speed: Float,
+    val obstacle: String,
+    val incline: Float,
+    val threat: String,
+    val thrust: Float,
+    val temperature: Float,
+    val humidity: Float
+)
 
 class MainActivity : ComponentActivity() {
 
@@ -65,9 +76,11 @@ class MainActivity : ComponentActivity() {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothSocket: BluetoothSocket? = null
     private var connectedDevice: BluetoothDevice? = null
-    private var isConnected = false
+    private var isConnected by mutableStateOf(false)
     private var bluetoothThread: Thread? = null
     private var inputStream: InputStream? = null
+    private var pedalData by mutableStateOf<PedalData?>(null)
+
 
     private val contactPickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -108,7 +121,9 @@ class MainActivity : ComponentActivity() {
                     PedalApp(
                         onSelectContact = { selectContact() },
                         onSelectDevice = { selectBluetoothDevice() },
-                        onStopSOS = { stopSOS() }
+                        onStopSOS = { stopSOS() },
+                        pedalData = pedalData,
+                        isConnected = isConnected
                     )
                 }
             }
@@ -209,7 +224,7 @@ class MainActivity : ComponentActivity() {
             val deviceNames = pairedDevices.map { it.name ?: "Unknown Device" }.toTypedArray()
 
             AlertDialog.Builder(this)
-                .setTitle("Select Fall Detection Device")
+                .setTitle("Select Pedal Hardware Kit")
                 .setItems(deviceNames) { _, which ->
                     val selectedDevice = pairedDevices[which]
                     connectToDevice(selectedDevice)
@@ -297,6 +312,7 @@ class MainActivity : ComponentActivity() {
             inputStream = bluetoothSocket?.inputStream
             val buffer = ByteArray(1024)
             var bytes: Int
+            val gson = Gson()
 
             // Keep listening to the InputStream
             while (isConnected) {
@@ -306,13 +322,17 @@ class MainActivity : ComponentActivity() {
                     if (bytes > 0) {
                         val message = String(buffer, 0, bytes)
                         Log.d(TAG, "Received: $message")
-
-                        // Check if impact is detected
-                        if (message.contains("IMPACT_DETECTED", ignoreCase = true)) {
+                        try {
+                            val data = gson.fromJson(message, PedalData::class.java)
                             runOnUiThread {
-                                Toast.makeText(this, "Fall detected! Starting emergency protocol.", Toast.LENGTH_LONG).show()
-                                startSOS() // This will now be triggered only by ESP32
+                                pedalData = data
+                                if (data.threat.equals("crash detected", ignoreCase = true)) {
+                                    Toast.makeText(this, "Fall detected! Starting emergency protocol.", Toast.LENGTH_LONG).show()
+                                    startSOS()
+                                }
                             }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error parsing JSON", e)
                         }
                     }
                 } catch (e: IOException) {
@@ -549,7 +569,13 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun PedalApp(onSelectContact: () -> Unit, onSelectDevice: () -> Unit, onStopSOS: () -> Unit) {
+fun PedalApp(
+    onSelectContact: () -> Unit,
+    onSelectDevice: () -> Unit,
+    onStopSOS: () -> Unit,
+    pedalData: PedalData?,
+    isConnected: Boolean
+) {
     var sosState by remember { mutableStateOf(false) }
     var timeLeft by remember { mutableStateOf(30) }
 
@@ -568,12 +594,19 @@ fun PedalApp(onSelectContact: () -> Unit, onSelectDevice: () -> Unit, onStopSOS:
             }) {
                 Text("Stop SOS")
             }
+        } else if (isConnected && pedalData != null) {
+            Text(text = "Speed: ${pedalData.speed}")
+            Text(text = "Obstacle: ${pedalData.obstacle}")
+            Text(text = "Incline: ${pedalData.incline}")
+            Text(text = "Thrust: ${pedalData.thrust}")
+            Text(text = "Temperature: ${pedalData.temperature}")
+            Text(text = "Humidity: ${pedalData.humidity}")
         } else {
             Button(onClick = onSelectContact) {
                 Text("Select Emergency Contact")
             }
             Button(onClick = onSelectDevice) {
-                Text("Select Fall Detection Device")
+                Text("Pair with Pedal Hardware Kit")
             }
         }
     }
@@ -583,6 +616,6 @@ fun PedalApp(onSelectContact: () -> Unit, onSelectDevice: () -> Unit, onStopSOS:
 @Composable
 fun DefaultPreview() {
     PedalTheme {
-        PedalApp({}, {}, {})
+        PedalApp({}, {}, {}, null, false)
     }
 }

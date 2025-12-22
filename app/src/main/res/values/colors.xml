@@ -7,7 +7,11 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    
+
+    <color name="colorPrimary">#282828</color>
+    <color name="colorPrimaryDark">#282828</color>
+    <color name="colorAccent">#fe8019</color>
+
     <color name="gruvbox_bg">#282828</color>
     <color name="gruvbox_fg">#ebdbb2</color>
     <color name="gruvbox_red_dark">#cc241d</color>
